@@ -14,13 +14,16 @@ clusters drop-off reasons, and recommends UX fixes weekly.
 """)
 
 # 📂 CSV upload
-uploaded_file = st.file_uploader("Upload Product Analytics CSV", type=["csv"])
+option = st.radio("Choose data source:", ["Upload CSV", "Use Sample Data"])
 
-if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-    st.write("### Preview of Data (first 10 rows)")
-    st.write(df.head(10))
-
+df = None
+if option == "Upload CSV":
+    uploaded_file = st.file_uploader("Upload your onboarding CSV", type=["csv"])
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+else:
+    df = pd.read_csv("sample_onboarding.csv")
+    st.success("Loaded sample onboarding data ✅")
     # ✅ KPI Cards for instant metrics
     if 'Stage' in df.columns:
         total_students = len(df)
