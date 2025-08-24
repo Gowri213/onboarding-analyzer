@@ -29,43 +29,43 @@ else:
 # Only process if df is not None
 # -----------------------------
 if df is not None:
-    # ---- Dynamic column mapping ----
-    student_col = st.selectbox("Select Student ID Column", df.columns)
-    stage_col = st.selectbox("Select Stage Column", df.columns)
-    status_col = st.selectbox("Select Status/Drop-off Column", df.columns)
-    reason_col = st.selectbox("Select Reason Column (optional)", ["None"] + list(df.columns))
-    date_col = st.selectbox("Select Date Column (optional, for trends)", ["None"] + list(df.columns))
 
-    # ---- Sanity checks ----
-    missing_cols = []
-    for col in [student_col, stage_col]:
-        if df[col].isnull().all():
-            missing_cols.append(col)
-    if missing_cols:
-        st.error(f"The following required column(s) are empty: {', '.join(missing_cols)}")
+    # ---- Auto-detect columns based on keywords ----
+    def find_column(df, keywords):
+        for col in df.columns:
+            for kw in keywords:
+                if kw.lower() in col.lower():
+                    return col
+        return None
+
+    student_col = find_column(df, ["student", "id", "user"])
+    stage_col = find_column(df, ["stage", "step", "onboarding"])
+    status_col = find_column(df, ["status", "completed", "drop"])
+    reason_col = find_column(df, ["reason", "cause", "why"])
+    date_col = find_column(df, ["date", "time"])
+
+    # -----------------------------
+    # Sanity checks
+    # -----------------------------
+    if not student_col or not stage_col:
+        st.error("Could not detect required columns (Student ID or Stage). Please ensure your CSV has them.")
         st.stop()
 
-    if reason_col != "None" and df[reason_col].isnull().all():
-        st.warning("The selected Reason column is empty. Reason-based clustering will be skipped.")
-
-    if date_col != "None" and df[date_col].isnull().all():
-        st.warning("The selected Date column is empty. Trend chart will be skipped.")
-
-    # -----------------------------
-    # KPI Cards for instant metrics
-    # -----------------------------
     total_students = len(df)
     top_stage = df[stage_col].value_counts().idxmax()
     top_stage_count = df[stage_col].value_counts().max()
     top_stage_percent = round(top_stage_count / total_students * 100, 2)
 
-    if reason_col != "None":
+    if reason_col:
         top_reason = df[reason_col].value_counts().idxmax()
         top_reason_count = df[reason_col].value_counts().max()
     else:
         top_reason = "N/A"
         top_reason_count = 0
 
+    # -----------------------------
+    # KPI Cards
+    # -----------------------------
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Students", total_students)
     col2.metric("Overall Drop-off %", f"{top_stage_percent}%")
@@ -121,17 +121,17 @@ if df is not None:
     # -----------------------------
     # Drop-off Reason Clustering
     # -----------------------------
-    if reason_col != "None":
+    if reason_col:
         st.write("### Drop-off Reason Clustering")
         reason_counts = df[reason_col].value_counts()
         st.write(reason_counts.head(10))
     else:
-        st.info("No 'Reason' column selected. Add it for reason-based clustering.")
+        st.info("No Reason column detected. Skipping reason-based clustering.")
 
     # -----------------------------
     # Trend Over Time
     # -----------------------------
-    if date_col != "None":
+    if date_col:
         st.write("### Drop-off Trend Over Time")
         df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
         df = df.dropna(subset=[date_col])
@@ -143,7 +143,7 @@ if df is not None:
         ax3.set_title("Drop-off Trend Over Time")
         st.pyplot(fig3)
     else:
-        st.info("No 'Date' column selected. Trend chart requires a Date column.")
+        st.info("No Date column detected. Skipping trend chart.")
 
     # -----------------------------
     # Weekly AI Recommendations
@@ -166,7 +166,7 @@ if df is not None:
             response = model.generate_content(prompt)
             st.write(response.text)
 
-            # 🔹 Highlight top friction points with badges
+            # 🔹 Highlight top friction points
             st.write("#### Top Friction Points & UX Fixes (Summary)")
             lines = response.text.split('\n')
             summary = []
