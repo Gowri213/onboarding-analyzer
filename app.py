@@ -44,17 +44,27 @@ if df is not None:
     reason_col = find_column(df, ["reason", "cause", "why"])
     date_col = find_column(df, ["date", "time"])
 
-    # -----------------------------
-    # Sanity checks
-    # -----------------------------
-    if not student_col or not stage_col:
-        st.error("Could not detect required columns (Student ID or Stage). Please ensure your CSV has them.")
-        st.stop()
+    # ---- Handle missing Student ID ----
+    if not student_col:
+        df['Student_ID_Temp'] = range(1, len(df)+1)
+        student_col = 'Student_ID_Temp'
+        st.warning("No Student ID column detected. Treating each row as a separate student.")
 
-    total_students = len(df)
-    top_stage = df[stage_col].value_counts().idxmax()
-    top_stage_count = df[stage_col].value_counts().max()
-    top_stage_percent = round(top_stage_count / total_students * 100, 2)
+    # ---- Handle missing Stage column ----
+    if not stage_col:
+        st.warning("No Stage column detected. Stage-wise charts and clustering will be skipped.")
+
+    # -----------------------------
+    # KPI Cards (if stage exists)
+    # -----------------------------
+    if stage_col:
+        total_students = len(df)
+        top_stage = df[stage_col].value_counts().idxmax()
+        top_stage_count = df[stage_col].value_counts().max()
+        top_stage_percent = round(top_stage_count / total_students * 100, 2)
+    else:
+        total_students = len(df)
+        top_stage = top_stage_count = top_stage_percent = "N/A"
 
     if reason_col:
         top_reason = df[reason_col].value_counts().idxmax()
@@ -63,12 +73,9 @@ if df is not None:
         top_reason = "N/A"
         top_reason_count = 0
 
-    # -----------------------------
-    # KPI Cards
-    # -----------------------------
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Students", total_students)
-    col2.metric("Overall Drop-off %", f"{top_stage_percent}%")
+    col2.metric("Overall Drop-off %", f"{top_stage_percent}%" if stage_col else "N/A")
     col3.markdown(
         f"<div style='background-color:#F0F2F6;padding:10px;border-radius:5px;'><strong>Top Stage Drop-off:</strong><br>{top_stage} ({top_stage_count})</div>",
         unsafe_allow_html=True
@@ -81,42 +88,44 @@ if df is not None:
     # -----------------------------
     # Stage-wise Drop-off
     # -----------------------------
-    st.write("### Stage-wise Drop-Off Count")
-    stage_counts = df[stage_col].value_counts()
-    stage_percent = (stage_counts / total_students * 100).round(2)
+    if stage_col:
+        st.write("### Stage-wise Drop-Off Count")
+        stage_counts = df[stage_col].value_counts()
+        stage_percent = (stage_counts / total_students * 100).round(2)
 
-    fig, ax = plt.subplots()
-    stage_counts.plot(kind='bar', ax=ax, color='skyblue')
-    for i, val in enumerate(stage_counts):
-        ax.text(i, val + 0.5, f"{stage_percent[i]}%", ha='center')
-    ax.set_ylabel("Number of Students")
-    ax.set_xlabel("Stages")
-    ax.set_title("Stage-wise Drop-Off")
-    st.pyplot(fig)
+        fig, ax = plt.subplots()
+        stage_counts.plot(kind='bar', ax=ax, color='skyblue')
+        for i, val in enumerate(stage_counts):
+            ax.text(i, val + 0.5, f"{stage_percent[i]}%", ha='center')
+        ax.set_ylabel("Number of Students")
+        ax.set_xlabel("Stages")
+        ax.set_title("Stage-wise Drop-Off")
+        st.pyplot(fig)
 
-    max_stage = stage_percent.idxmax()
-    st.write(f"⚠️ Stage with highest drop-off: **{max_stage} ({stage_percent[max_stage]}%)**")
+        max_stage = stage_percent.idxmax()
+        st.write(f"⚠️ Stage with highest drop-off: **{max_stage} ({stage_percent[max_stage]}%)**")
 
     # -----------------------------
     # Drop-off Clustering
     # -----------------------------
-    st.write("### Drop-Off Clustering")
-    df_cluster = df.copy()
-    df_cluster['Stage_num'] = df_cluster[stage_col].astype('category').cat.codes
-    k = min(3, len(df_cluster[stage_col].unique()))
-    kmeans = KMeans(n_clusters=k, random_state=42)
-    df_cluster['Cluster'] = kmeans.fit_predict(df_cluster[['Stage_num']])
-    st.write(df_cluster[[stage_col, 'Cluster']].head(10))
+    if stage_col:
+        st.write("### Drop-Off Clustering")
+        df_cluster = df.copy()
+        df_cluster['Stage_num'] = df_cluster[stage_col].astype('category').cat.codes
+        k = min(3, len(df_cluster[stage_col].unique()))
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        df_cluster['Cluster'] = kmeans.fit_predict(df_cluster[['Stage_num']])
+        st.write(df_cluster[[stage_col, 'Cluster']].head(10))
 
-    fig2, ax2 = plt.subplots()
-    for cluster in sorted(df_cluster['Cluster'].unique()):
-        cluster_data = df_cluster[df_cluster['Cluster'] == cluster]
-        ax2.scatter(cluster_data.index, cluster_data['Stage_num'], label=f'Cluster {cluster}')
-    ax2.set_xlabel("Student Index")
-    ax2.set_ylabel("Stage (numeric)")
-    ax2.set_title("Drop-off Clustering")
-    ax2.legend()
-    st.pyplot(fig2)
+        fig2, ax2 = plt.subplots()
+        for cluster in sorted(df_cluster['Cluster'].unique()):
+            cluster_data = df_cluster[df_cluster['Cluster'] == cluster]
+            ax2.scatter(cluster_data.index, cluster_data['Stage_num'], label=f'Cluster {cluster}')
+        ax2.set_xlabel("Student Index")
+        ax2.set_ylabel("Stage (numeric)")
+        ax2.set_title("Drop-off Clustering")
+        ax2.legend()
+        st.pyplot(fig2)
 
     # -----------------------------
     # Drop-off Reason Clustering
@@ -131,7 +140,7 @@ if df is not None:
     # -----------------------------
     # Trend Over Time
     # -----------------------------
-    if date_col:
+    if date_col and stage_col:
         st.write("### Drop-off Trend Over Time")
         df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
         df = df.dropna(subset=[date_col])
@@ -142,6 +151,8 @@ if df is not None:
         ax3.set_xlabel("Date")
         ax3.set_title("Drop-off Trend Over Time")
         st.pyplot(fig3)
+    elif date_col:
+        st.info("Stage column missing. Trend chart requires both Stage and Date.")
     else:
         st.info("No Date column detected. Skipping trend chart.")
 
