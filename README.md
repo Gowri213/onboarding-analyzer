@@ -32,7 +32,7 @@ An intelligent Streamlit app that analyzes product onboarding data, identifies f
 ```bash
 git clone https://github.com/yourusername/onboarding-analyzer.git
 cd onboarding-analyzer
-
+---
 ## Tech Stack
 Python
 Streamlit
