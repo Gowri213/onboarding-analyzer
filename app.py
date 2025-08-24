@@ -24,47 +24,67 @@ if option == "Upload CSV":
 else:
     df = pd.read_csv("sample_onboarding.csv")
     st.success("Loaded sample onboarding data ✅")
-    # ✅ KPI Cards for instant metrics
-    if 'Stage' in df.columns:
-        total_students = len(df)
-        top_stage = df['Stage'].value_counts().idxmax()
-        top_stage_count = df['Stage'].value_counts().max()
-        top_stage_percent = round(top_stage_count / total_students * 100, 2)
 
-        if 'Reason' in df.columns:
-            top_reason = df['Reason'].value_counts().idxmax()
-            top_reason_count = df['Reason'].value_counts().max()
-        else:
-            top_reason = "N/A"
-            top_reason_count = 0
+# -----------------------------
+# Dynamic Column Mapping (for any dataset)
+# -----------------------------
+if df is not None:
+    st.subheader("⚙️ Map Your Columns")
+    student_col = st.selectbox("Select Student ID Column", df.columns)
+    stage_col = st.selectbox("Select Stage Column", df.columns)
+    status_col = st.selectbox("Select Status/Drop-off Column", df.columns)
+    reason_col = st.selectbox("Select Reason Column (optional)", ["None"] + list(df.columns))
+    date_col = st.selectbox("Select Date Column (optional, for trends)", ["None"] + list(df.columns))
 
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Students", total_students)
-        col2.metric("Overall Drop-off %", f"{top_stage_percent}%")
+    # -----------------------------
+    # Sanity Checks
+    # -----------------------------
+    missing_cols = []
+    for col in [student_col, stage_col]:
+        if df[col].isnull().all():
+            missing_cols.append(col)
+    if missing_cols:
+        st.error(f"The following required column(s) are empty: {', '.join(missing_cols)}")
+        st.stop()
 
-        # ✅ Full Top Stage Drop-off displayed with wrapping
-        col3.markdown(
-            f"""
-            <div style="background-color:#F0F2F6;padding:10px;border-radius:5px;">
-                <strong>Top Stage Drop-off:</strong><br>{top_stage} ({top_stage_count})
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    if reason_col != "None" and df[reason_col].isnull().all():
+        st.warning("The selected Reason column is empty. Reason-based clustering will be skipped.")
 
-        # ✅ Full Top Reason displayed with wrapping
-        col4.markdown(
-            f"""
-            <div style="background-color:#F0F2F6;padding:10px;border-radius:5px;">
-                <strong>Top Reason:</strong><br>{top_reason} ({top_reason_count})
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    if date_col != "None" and df[date_col].isnull().all():
+        st.warning("The selected Date column is empty. Trend chart will be skipped.")
 
-    # 1️⃣ Stage-wise drop-off
+    # -----------------------------
+    # KPI Cards for instant metrics
+    # -----------------------------
+    total_students = len(df)
+    top_stage = df[stage_col].value_counts().idxmax()
+    top_stage_count = df[stage_col].value_counts().max()
+    top_stage_percent = round(top_stage_count / total_students * 100, 2)
+
+    if reason_col != "None":
+        top_reason = df[reason_col].value_counts().idxmax()
+        top_reason_count = df[reason_col].value_counts().max()
+    else:
+        top_reason = "N/A"
+        top_reason_count = 0
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Students", total_students)
+    col2.metric("Overall Drop-off %", f"{top_stage_percent}%")
+    col3.markdown(
+        f"<div style='background-color:#F0F2F6;padding:10px;border-radius:5px;'><strong>Top Stage Drop-off:</strong><br>{top_stage} ({top_stage_count})</div>",
+        unsafe_allow_html=True
+    )
+    col4.markdown(
+        f"<div style='background-color:#F0F2F6;padding:10px;border-radius:5px;'><strong>Top Reason:</strong><br>{top_reason} ({top_reason_count})</div>",
+        unsafe_allow_html=True
+    )
+
+    # -----------------------------
+    # Stage-wise Drop-off
+    # -----------------------------
     st.write("### Stage-wise Drop-Off Count")
-    stage_counts = df['Stage'].value_counts()
+    stage_counts = df[stage_col].value_counts()
     stage_percent = (stage_counts / total_students * 100).round(2)
 
     fig, ax = plt.subplots()
@@ -79,15 +99,16 @@ else:
     max_stage = stage_percent.idxmax()
     st.write(f"⚠️ Stage with highest drop-off: **{max_stage} ({stage_percent[max_stage]}%)**")
 
-    # 2️⃣ Drop-off Clustering
+    # -----------------------------
+    # Drop-off Clustering
+    # -----------------------------
     st.write("### Drop-Off Clustering")
     df_cluster = df.copy()
-    df_cluster['Stage_num'] = df_cluster['Stage'].astype('category').cat.codes
-
-    k = min(3, len(df_cluster['Stage'].unique()))
+    df_cluster['Stage_num'] = df_cluster[stage_col].astype('category').cat.codes
+    k = min(3, len(df_cluster[stage_col].unique()))
     kmeans = KMeans(n_clusters=k, random_state=42)
     df_cluster['Cluster'] = kmeans.fit_predict(df_cluster[['Stage_num']])
-    st.write(df_cluster[['Stage', 'Cluster']].head(10))
+    st.write(df_cluster[[stage_col, 'Cluster']].head(10))
 
     fig2, ax2 = plt.subplots()
     for cluster in sorted(df_cluster['Cluster'].unique()):
@@ -99,20 +120,24 @@ else:
     ax2.legend()
     st.pyplot(fig2)
 
-    # 3️⃣ Drop-off reason clustering
-    if 'Reason' in df.columns:
+    # -----------------------------
+    # Drop-off Reason Clustering
+    # -----------------------------
+    if reason_col != "None":
         st.write("### Drop-off Reason Clustering")
-        reason_counts = df['Reason'].value_counts()
+        reason_counts = df[reason_col].value_counts()
         st.write(reason_counts.head(10))
     else:
-        st.info("No 'Reason' column found. Add it for reason-based clustering.")
+        st.info("No 'Reason' column selected. Add it for reason-based clustering.")
 
-    # 4️⃣ Trend over time chart
-    if 'Date' in df.columns:
+    # -----------------------------
+    # Trend Over Time
+    # -----------------------------
+    if date_col != "None":
         st.write("### Drop-off Trend Over Time")
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
-        df = df.dropna(subset=['Date'])
-        trend = df.groupby(['Date', 'Stage']).size().unstack(fill_value=0)
+        df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+        df = df.dropna(subset=[date_col])
+        trend = df.groupby([date_col, stage_col]).size().unstack(fill_value=0)
         fig3, ax3 = plt.subplots(figsize=(10,5))
         trend.plot(ax=ax3)
         ax3.set_ylabel("Number of Students")
@@ -120,9 +145,11 @@ else:
         ax3.set_title("Drop-off Trend Over Time")
         st.pyplot(fig3)
     else:
-        st.info("No 'Date' column found. Trend chart requires 'Date'.")
+        st.info("No 'Date' column selected. Trend chart requires a Date column.")
 
-    # 5️⃣ Weekly Gemini AI recommendations + summary box
+    # -----------------------------
+    # Weekly AI Recommendations
+    # -----------------------------
     st.write("### Weekly AI UX Recommendations & Friction Points Summary")
     if st.button("Get Weekly AI Suggestions"):
         prompt = f"""
