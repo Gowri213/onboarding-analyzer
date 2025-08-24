@@ -5,7 +5,7 @@ import google.generativeai as genai
 from sklearn.cluster import KMeans
 
 # 🔑 Configure Gemini API
-genai.configure(api_key="AIzaSyBBl4xVJ-DJfq_IPJhcJnLFA9ypDk6nRjA")
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 st.title("Onboarding Analyzer Agent")
 st.write("""
