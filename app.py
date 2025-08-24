@@ -26,19 +26,17 @@ else:
     st.success("Loaded sample onboarding data ✅")
 
 # -----------------------------
-# Dynamic Column Mapping (for any dataset)
+# Only process if df is not None
 # -----------------------------
 if df is not None:
-    st.subheader("⚙️ Map Your Columns")
+    # ---- Dynamic column mapping ----
     student_col = st.selectbox("Select Student ID Column", df.columns)
     stage_col = st.selectbox("Select Stage Column", df.columns)
     status_col = st.selectbox("Select Status/Drop-off Column", df.columns)
     reason_col = st.selectbox("Select Reason Column (optional)", ["None"] + list(df.columns))
     date_col = st.selectbox("Select Date Column (optional, for trends)", ["None"] + list(df.columns))
 
-    # -----------------------------
-    # Sanity Checks
-    # -----------------------------
+    # ---- Sanity checks ----
     missing_cols = []
     for col in [student_col, stage_col]:
         if df[col].isnull().all():
