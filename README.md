@@ -1,47 +1,89 @@
-# Onboarding Analyzer Hackathon Project
-# Onboarding Analyzer Agent
+Onboarding Drop-off Analyzer 🚀
 
-An intelligent Streamlit app that analyzes product onboarding data, identifies friction points, clusters drop-off reasons, and provides actionable AI-driven UX recommendations.
+An AI-powered Streamlit app that helps identify where and why users drop off during an onboarding process.
+Useful for universities, training platforms, SaaS products, and businesses that want to improve user engagement.
 
----
+🔹 Features
 
-## 🚀 Features
+📂 Upload any CSV dataset with onboarding/staged process data
 
-- **CSV Upload:** Drag-and-drop your onboarding analytics CSV.  
-- **KPI Cards:** Instant metrics such as Total Students, Overall Drop-off %, Top Stage Drop-off, and Top Reason.  
-- **Stage-wise Drop-off Charts:** Visualize drop-offs across onboarding stages.  
-- **Drop-off Clustering:** Group users by stages to identify patterns.  
-- **Reason Clustering:** Analyze top reasons for drop-offs.  
-- **Trend Over Time:** Visualize onboarding performance over dates.  
-- **Weekly AI UX Recommendations:** Powered by Gemini API for actionable insights.  
-- **Download AI Summary:** Export friction points and UX suggestions as a CSV.
+👀 Preview the uploaded dataset (first 10 rows)
 
----
+📊 Overall drop-off percentage calculation
 
-## 💻 Demo
+🏷️ Stage-wise drop-off analysis (which stage loses the most users)
 
-- **Live App (Agent Link):** [Click here](https://app-analyzer-jdu6lwbaifbrqxtwxdrfer.streamlit.app/)  
-- **Video Demo:** *[Insert your video link here]*
+💡 AI-powered clustering of drop-off reasons (e.g., lack of guidance, unclear instructions)
 
----
+📉 Drop-off funnel visualization
 
-## 📂 Usage
+🤖 AI Suggestions for reducing drop-offs using Gemini
 
-1. Clone the repo:
 
-```bash
-git clone https://github.com/yourusername/onboarding-analyzer.git
+🔹 How It Works
+
+1. Upload a CSV file with onboarding data.
+
+Recommended columns:
+
+User ID / Student ID
+
+Stage / Step Name
+
+Status / Drop-off Reason
+
+
+Example:
+
+user_id	stage	status	reason
+
+101	Registration	Dropped Off	Lack of interest
+102	Orientation	Completed	—
+103	Stage 1	Dropped Off	Unclear instructions
+
+
+
+
+2. The analyzer automatically:
+
+Detects drop-off percentage
+
+Identifies stage with highest drop-off
+
+Clusters common reasons
+
+Provides AI recommendations
+
+
+
+
+🔹 Live Demo
+
+Try the app here: 👉 
+
+🔹 Repository
+
+GitHub Repo: 👉 
+
+🔹 Setup (for developers)
+
+If you want to run it locally:
+
+# Clone the repo
+git clone <your-repo-url>
 cd onboarding-analyzer
----
-## Tech Stack
-Python
-Streamlit
-Pandas
-Matplotlib
-scikit-learn(KMeans clustering)
-Google Gemini API
 
-Author
-Gowri S
-LinkedIn: https://www.linkedin.com/in/gowri-s-961617292
-Email: gowri21115@gmail.com
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the Streamlit app
+streamlit run app.py
+
+🔹 Notes
+
+This tool works best with datasets that represent onboarding or multi-stage processes.
+
+If you upload a dataset without stages or drop-off information, results may not be meaningful.
+
+Designed for educational and research purposes (college hackathons, demos, and prototype building).
+
