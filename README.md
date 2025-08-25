@@ -12,8 +12,8 @@ An AI-powered tool designed to help universities, training platforms, and organi
 - **Reason Detection**: Highlights top reasons for drop-off at each stage.  
 - **Visualizations**: Generates graphs and charts for easy interpretation of onboarding trends.  
 - **Clustering**: Groups stages or reasons to identify patterns in drop-offs.  
-- **Versatile**: Works with multiple datasets, not restricted to students only.  
-
+- **Versatile**: Works with multiple datasets, not restricted to students only.
+- **AI Powered insights**: Uses Gemini to provide weekly ux recommendations and reasons for drop-offs, download option available.  
 
 
 ## Installation
