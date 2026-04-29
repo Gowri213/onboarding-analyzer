@@ -14,7 +14,7 @@ An AI-powered tool designed to help universities, training platforms, and organi
 - **Clustering**: Groups stages or reasons to identify patterns in drop-offs.  
 - **Versatile**: Works with multiple datasets, not restricted to students only.
 - **AI Powered insights**: Uses Gemini to provide weekly ux recommendations and reasons for drop-offs, download option available.  
-
+- Testing if it works
 
 ## Installation
 
